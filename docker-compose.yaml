@@ -160,8 +160,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    cap_drop:
-      - ALL
 
   # ---------------------------------------------------------------------------
   # TEMPORAL - Workflow Engine (PostgreSQL backend, no Elasticsearch)
@@ -193,8 +191,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    cap_drop:
-      - ALL
 
   # ---------------------------------------------------------------------------
   # TEMPORAL UI - Workflow Management Interface (internal only, access via VPN)
@@ -216,8 +212,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
-    cap_drop:
-      - ALL
 
   # ---------------------------------------------------------------------------
   # TEMPORAL ADMIN TOOLS - CLI Tools (optional, for debugging)
@@ -235,8 +229,6 @@ services:
     tty: true
     depends_on:
       - temporal
-    cap_drop:
-      - ALL
 
 # =============================================================================
 # VOLUMES - Named volumes for persistent data
