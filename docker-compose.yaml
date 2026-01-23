@@ -3,6 +3,11 @@
 # =============================================================================
 # Social media scheduling and management platform
 # Accessible at: https://social.eblej24.com
+#
+# Data Storage: All persistent data stored in ./data/ for easy backup
+#   ./data/postgres/    - PostgreSQL database files
+#   ./data/redis/       - Redis persistence
+#   ./data/postiz/      - Application config and uploads
 # =============================================================================
 
 services:
@@ -80,8 +85,8 @@ services:
       # === Developer Settings
       NX_ADD_PLUGINS: false
     volumes:
-      - postiz_config:/config/
-      - postiz_uploads:/uploads/
+      - ./data/postiz/config:/config/
+      - ./data/postiz/uploads:/uploads/
     networks:
       - public
       - internal
@@ -120,7 +125,7 @@ services:
       POSTIZ_DB: ${POSTIZ_DB:-postiz}
       TEMPORAL_DB: ${TEMPORAL_DB:-temporal}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
       - ./config/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
     networks:
       - internal
@@ -144,7 +149,7 @@ services:
     container_name: postiz-redis
     restart: unless-stopped
     volumes:
-      - postiz_redis_data:/data
+      - ./data/redis:/data
     networks:
       - internal
     healthcheck:
@@ -229,22 +234,6 @@ services:
       - temporal
     cap_drop:
       - ALL
-
-# =============================================================================
-# VOLUMES
-# =============================================================================
-volumes:
-  postiz_config:
-    name: eblej24_postiz_config
-
-  postiz_uploads:
-    name: eblej24_postiz_uploads
-
-  postgres_data:
-    name: eblej24_postgres_data
-
-  postiz_redis_data:
-    name: eblej24_postiz_redis_data
 
 # =============================================================================
 # NETWORKS - Connect to existing eblej24 infrastructure

@@ -1,0 +1,10 @@
+# Ignore all data files (contain sensitive/large data)
+*
+
+# But keep the directory structure
+!.gitignore
+!postgres/.gitkeep
+!redis/.gitkeep
+!postiz/.gitkeep
+!postiz/config/.gitkeep
+!postiz/uploads/.gitkeep
