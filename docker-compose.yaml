@@ -36,6 +36,11 @@ services:
       UPLOAD_DIRECTORY: /uploads
       NEXT_PUBLIC_UPLOAD_DIRECTORY: /uploads
 
+      # === Email Settings
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-}
+
       # === Social Media API Settings
       X_API_KEY: ${X_API_KEY:-}
       X_API_SECRET: ${X_API_SECRET:-}
