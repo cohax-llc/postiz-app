@@ -4,7 +4,7 @@
 # Import this file into the main Caddyfile or add via CaddyManager
 #
 # Services:
-#   - social.eblej24.com -> Postiz application (postiz:5000)
+#   - social.eblej24.com -> Postiz application (eb24-postiz-app:5000)
 #
 # Note: Temporal UI is internal-only, accessible via WireGuard VPN
 # =============================================================================
@@ -27,7 +27,7 @@ social.eblej24.com {
 
 	# API requests
 	handle /api/* {
-		reverse_proxy postiz:5000 {
+		reverse_proxy eb24-postiz-app:5000 {
 			health_uri /
 			health_interval 30s
 			health_timeout 10s
@@ -39,7 +39,7 @@ social.eblej24.com {
 		request_body {
 			max_size 100MB
 		}
-		reverse_proxy postiz:5000 {
+		reverse_proxy eb24-postiz-app:5000 {
 			health_uri /
 			health_interval 30s
 			health_timeout 10s
@@ -48,7 +48,7 @@ social.eblej24.com {
 
 	# WebSocket support for real-time updates
 	handle /socket.io/* {
-		reverse_proxy postiz:5000 {
+		reverse_proxy eb24-postiz-app:5000 {
 			transport http {
 				versions h2c 1.1
 			}
@@ -57,7 +57,7 @@ social.eblej24.com {
 
 	# All other requests (frontend)
 	handle {
-		reverse_proxy postiz:5000 {
+		reverse_proxy eb24-postiz-app:5000 {
 			health_uri /
 			health_interval 30s
 			health_timeout 10s
