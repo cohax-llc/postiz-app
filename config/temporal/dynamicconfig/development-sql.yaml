@@ -1,0 +1,16 @@
+# Temporal Dynamic Config for PostgreSQL (no Elasticsearch)
+# Minimal configuration for production deployments without advanced visibility
+
+# Disable advanced visibility (requires Elasticsearch)
+system.advancedVisibilityWritingMode:
+  - value: "off"
+    constraints: {}
+
+# Limit history size for performance
+limit.historyCount.error:
+  - value: 50000
+    constraints: {}
+
+limit.historyCount.warn:
+  - value: 10000
+    constraints: {}

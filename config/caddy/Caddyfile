@@ -1,0 +1,61 @@
+# =============================================================================
+# Postiz - Caddy Configuration for eblej24.com
+# =============================================================================
+# Import this file into the main Caddyfile or add via CaddyManager
+#
+# Services:
+#   - social.eblej24.com -> Postiz application (postiz:5000)
+#
+# Note: Temporal UI is internal-only, accessible via WireGuard VPN
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Postiz - Social Media Scheduler
+# -----------------------------------------------------------------------------
+# Main application accessible at: https://social.eblej24.com
+# API accessible at: https://social.eblej24.com/api/*
+social.eblej24.com {
+    import security_headers
+
+    # API requests
+    handle /api/* {
+        reverse_proxy postiz:5000 {
+            health_uri /
+            health_interval 30s
+            health_timeout 10s
+        }
+    }
+
+    # Upload handling with increased body size
+    handle /uploads/* {
+        reverse_proxy postiz:5000 {
+            health_uri /
+            health_interval 30s
+            health_timeout 10s
+        }
+    }
+
+    # WebSocket support for real-time updates
+    handle /socket.io/* {
+        reverse_proxy postiz:5000 {
+            transport http {
+                versions h2c 1.1
+            }
+        }
+    }
+
+    # All other requests (frontend)
+    handle {
+        reverse_proxy postiz:5000 {
+            health_uri /
+            health_interval 30s
+            health_timeout 10s
+        }
+    }
+
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}
