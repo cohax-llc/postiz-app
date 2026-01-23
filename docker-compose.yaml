@@ -16,7 +16,7 @@ services:
   # ---------------------------------------------------------------------------
   postiz:
     image: ghcr.io/gitroomhq/postiz-app:v2.12.1
-    container_name: postiz
+    container_name: eb24-postiz-app
     restart: unless-stopped
     env_file:
       - .env
@@ -122,7 +122,7 @@ services:
   #   - temporal_visibility: Temporal visibility database
   postgres:
     image: postgres:17-alpine
-    container_name: postgres
+    container_name: eb24-postiz-postgres
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
@@ -153,7 +153,7 @@ services:
   # ---------------------------------------------------------------------------
   postiz-redis:
     image: redis:7.2-alpine
-    container_name: postiz-redis
+    container_name: eb24-postiz-redis
     restart: unless-stopped
     command: >
       sh -c 'redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass "$REDIS_PASSWORD"}'
@@ -176,7 +176,7 @@ services:
   # ---------------------------------------------------------------------------
   temporal:
     image: temporalio/auto-setup:1.28.1
-    container_name: temporal
+    container_name: eb24-postiz-temporal
     restart: unless-stopped
     environment:
       - DB=postgres12
@@ -209,7 +209,7 @@ services:
   # ---------------------------------------------------------------------------
   temporal-ui:
     image: temporalio/ui:2.34.0
-    container_name: temporal-ui
+    container_name: eb24-postiz-temporal-ui
     restart: unless-stopped
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
@@ -232,7 +232,7 @@ services:
   # ---------------------------------------------------------------------------
   temporal-admin-tools:
     image: temporalio/admin-tools:1.28.1-tctl-1.18.4-cli-1.4.1
-    container_name: temporal-admin-tools
+    container_name: eb24-postiz-temporal-admin
     restart: unless-stopped
     environment:
       - TEMPORAL_ADDRESS=temporal:7233

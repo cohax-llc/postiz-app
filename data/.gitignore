@@ -3,7 +3,8 @@
 
 # But keep the directory structure
 !.gitignore
-!postgres/.gitkeep
+!postgres/
+# Note: postgres/ must be empty - PostgreSQL initializes it on first run
 !redis/.gitkeep
 !postiz/.gitkeep
 !postiz/config/.gitkeep
