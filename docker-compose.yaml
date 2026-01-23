@@ -14,7 +14,7 @@ services:
   # ---------------------------------------------------------------------------
   # POSTIZ - Main Application
   # ---------------------------------------------------------------------------
-  postiz:
+  eb24-postiz-app:
     image: ghcr.io/gitroomhq/postiz-app:v2.12.1
     container_name: eb24-postiz-app
     restart: unless-stopped
@@ -27,10 +27,10 @@ services:
       NEXT_PUBLIC_BACKEND_URL: ${POSTIZ_BACKEND_URL:-https://social.eblej24.com/api}
       JWT_SECRET: ${POSTIZ_JWT_SECRET:?POSTIZ_JWT_SECRET is required}
       # Database URL built from postgres credentials (no separate variable needed)
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTIZ_DB:-postiz}
-      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD}@postiz-redis:6379}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@eb24-postiz-postgres:5432/${POSTIZ_DB:-postiz}
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD}@eb24-postiz-redis:6379}
       BACKEND_INTERNAL_URL: http://localhost:3000
-      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_ADDRESS: eb24-postiz-temporal:7233
       IS_GENERAL: 'true'
       DISABLE_REGISTRATION: ${POSTIZ_DISABLE_REGISTRATION:-false}
 
@@ -99,11 +99,11 @@ services:
       - public
       - internal
     depends_on:
-      postgres:
+      eb24-postiz-postgres:
         condition: service_healthy
-      postiz-redis:
+      eb24-postiz-redis:
         condition: service_healthy
-      temporal:
+      eb24-postiz-temporal:
         condition: service_started
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/"]
@@ -119,7 +119,7 @@ services:
   #   - postiz: Main application database
   #   - temporal: Workflow engine database
   #   - temporal_visibility: Temporal visibility database
-  postgres:
+  eb24-postiz-postgres:
     image: postgres:17-alpine
     container_name: eb24-postiz-postgres
     restart: unless-stopped
@@ -144,7 +144,7 @@ services:
   # ---------------------------------------------------------------------------
   # POSTIZ REDIS - Cache (internal only)
   # ---------------------------------------------------------------------------
-  postiz-redis:
+  eb24-postiz-redis:
     image: redis:7.2-alpine
     container_name: eb24-postiz-redis
     restart: unless-stopped
@@ -165,7 +165,7 @@ services:
   # ---------------------------------------------------------------------------
   # TEMPORAL - Workflow Engine (PostgreSQL backend, no Elasticsearch)
   # ---------------------------------------------------------------------------
-  temporal:
+  eb24-postiz-temporal:
     image: temporalio/auto-setup:1.28.1
     container_name: eb24-postiz-temporal
     restart: unless-stopped
@@ -174,7 +174,7 @@ services:
       - DB_PORT=5432
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PWD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-      - POSTGRES_SEEDS=postgres
+      - POSTGRES_SEEDS=eb24-postiz-postgres
       - DBNAME=${TEMPORAL_DB:-temporal}
       - VISIBILITY_DBNAME=${TEMPORAL_DB:-temporal}_visibility
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
@@ -184,7 +184,7 @@ services:
     networks:
       - internal
     depends_on:
-      postgres:
+      eb24-postiz-postgres:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 7233 || exit 1"]
@@ -196,17 +196,17 @@ services:
   # ---------------------------------------------------------------------------
   # TEMPORAL UI - Workflow Management Interface (internal only, access via VPN)
   # ---------------------------------------------------------------------------
-  temporal-ui:
+  eb24-postiz-temporal-ui:
     image: temporalio/ui:2.34.0
     container_name: eb24-postiz-temporal-ui
     restart: unless-stopped
     environment:
-      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_ADDRESS=eb24-postiz-temporal:7233
       - TEMPORAL_CORS_ORIGINS=http://localhost:8080
     networks:
       - internal
     depends_on:
-      - temporal
+      - eb24-postiz-temporal
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
       interval: 30s
@@ -217,19 +217,19 @@ services:
   # ---------------------------------------------------------------------------
   # TEMPORAL ADMIN TOOLS - CLI Tools (optional, for debugging)
   # ---------------------------------------------------------------------------
-  temporal-admin-tools:
+  eb24-postiz-temporal-admin:
     image: temporalio/admin-tools:1.28.1-tctl-1.18.4-cli-1.4.1
     container_name: eb24-postiz-temporal-admin
     restart: unless-stopped
     environment:
-      - TEMPORAL_ADDRESS=temporal:7233
-      - TEMPORAL_CLI_ADDRESS=temporal:7233
+      - TEMPORAL_ADDRESS=eb24-postiz-temporal:7233
+      - TEMPORAL_CLI_ADDRESS=eb24-postiz-temporal:7233
     networks:
       - internal
     stdin_open: true
     tty: true
     depends_on:
-      - temporal
+      - eb24-postiz-temporal
 
 # =============================================================================
 # VOLUMES - Named volumes for persistent data
