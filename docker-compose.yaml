@@ -217,7 +217,7 @@ services:
       eb24-postiz-elasticsearch:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "tctl", "--address", "localhost:7233", "cluster", "health"]
+      test: ["CMD-SHELL", "timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/7233' 2>/dev/null || exit 1"]
       interval: 20s
       timeout: 10s
       retries: 10
