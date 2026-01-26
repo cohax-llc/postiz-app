@@ -6,6 +6,7 @@
 #
 # Data Storage:
 #   postgres_data volume - PostgreSQL database (Docker managed)
+#   elasticsearch_data   - Elasticsearch data (Docker managed)
 #   ./data/redis/        - Redis persistence
 #   ./data/postiz/       - Application config and uploads
 # =============================================================================
@@ -163,7 +164,33 @@ services:
       retries: 3
 
   # ---------------------------------------------------------------------------
-  # TEMPORAL - Workflow Engine (PostgreSQL backend, no Elasticsearch)
+  # ELASTICSEARCH - Search engine for Temporal visibility
+  # ---------------------------------------------------------------------------
+  eb24-postiz-elasticsearch:
+    image: elasticsearch:7.17.27
+    container_name: eb24-postiz-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - cluster.routing.allocation.disk.threshold_enabled=true
+      - cluster.routing.allocation.disk.watermark.low=512mb
+      - cluster.routing.allocation.disk.watermark.high=256mb
+      - cluster.routing.allocation.disk.watermark.flood_stage=128mb
+      - ES_JAVA_OPTS=-Xms256m -Xmx512m
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # TEMPORAL - Workflow Engine (PostgreSQL + Elasticsearch)
   # ---------------------------------------------------------------------------
   eb24-postiz-temporal:
     image: temporalio/auto-setup:1.28.1
@@ -176,9 +203,10 @@ services:
       - POSTGRES_PWD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       - POSTGRES_SEEDS=eb24-postiz-postgres
       - DBNAME=${TEMPORAL_DB:-temporal}
-      - VISIBILITY_DBNAME=${TEMPORAL_DB:-temporal}_visibility
+      - ENABLE_ES=true
+      - ES_SEEDS=eb24-postiz-elasticsearch
+      - ES_VERSION=v7
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
-      - ENABLE_ES=false
     volumes:
       - ./config/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
     networks:
@@ -186,12 +214,14 @@ services:
     depends_on:
       eb24-postiz-postgres:
         condition: service_healthy
+      eb24-postiz-elasticsearch:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 7233 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 90s
 
   # ---------------------------------------------------------------------------
   # TEMPORAL UI - Workflow Management Interface (internal only, access via VPN)
@@ -237,6 +267,8 @@ services:
 volumes:
   postgres_data:
     name: eb24-postiz-postgres-data
+  elasticsearch_data:
+    name: eb24-postiz-elasticsearch-data
 
 # =============================================================================
 # NETWORKS - Connect to existing eblej24 infrastructure
