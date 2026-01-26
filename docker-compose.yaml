@@ -107,7 +107,7 @@ services:
       eb24-postiz-temporal:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/', res => process.exit(res.statusCode < 400 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -141,6 +141,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
 
   # ---------------------------------------------------------------------------
   # POSTIZ REDIS - Cache (internal only)
@@ -152,7 +153,7 @@ services:
     command: >
       sh -c 'redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass "$REDIS_PASSWORD"}'
     environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     volumes:
       - ./data/redis:/data
     networks:
@@ -162,6 +163,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
 
   # ---------------------------------------------------------------------------
   # ELASTICSEARCH - Search engine for Temporal visibility
@@ -171,13 +173,13 @@ services:
     container_name: eb24-postiz-elasticsearch
     restart: unless-stopped
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - cluster.routing.allocation.disk.threshold_enabled=true
-      - cluster.routing.allocation.disk.watermark.low=512mb
-      - cluster.routing.allocation.disk.watermark.high=256mb
-      - cluster.routing.allocation.disk.watermark.flood_stage=128mb
-      - ES_JAVA_OPTS=-Xms256m -Xmx512m
+      cluster.routing.allocation.disk.threshold_enabled: "true"
+      cluster.routing.allocation.disk.watermark.low: 512mb
+      cluster.routing.allocation.disk.watermark.high: 256mb
+      cluster.routing.allocation.disk.watermark.flood_stage: 128mb
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms256m -Xmx256m
+      xpack.security.enabled: "false"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     networks:
@@ -197,16 +199,16 @@ services:
     container_name: eb24-postiz-temporal
     restart: unless-stopped
     environment:
-      - DB=postgres12
-      - DB_PORT=5432
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PWD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-      - POSTGRES_SEEDS=eb24-postiz-postgres
-      - DBNAME=${TEMPORAL_DB:-temporal}
-      - ENABLE_ES=true
-      - ES_SEEDS=eb24-postiz-elasticsearch
-      - ES_VERSION=v7
-      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_SEEDS: eb24-postiz-postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+      ENABLE_ES: "true"
+      ES_SEEDS: eb24-postiz-elasticsearch
+      ES_VERSION: v7
+      TEMPORAL_NAMESPACE: default
     volumes:
       - ./config/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
     networks:
@@ -217,7 +219,7 @@ services:
       eb24-postiz-elasticsearch:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/7233' 2>/dev/null || exit 1"]
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "eb24-postiz-temporal:7233"]
       interval: 20s
       timeout: 10s
       retries: 10
@@ -231,12 +233,13 @@ services:
     container_name: eb24-postiz-temporal-ui
     restart: unless-stopped
     environment:
-      - TEMPORAL_ADDRESS=eb24-postiz-temporal:7233
-      - TEMPORAL_CORS_ORIGINS=http://localhost:8080
+      TEMPORAL_ADDRESS: eb24-postiz-temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://127.0.0.1:3000
     networks:
       - internal
     depends_on:
-      - eb24-postiz-temporal
+      eb24-postiz-temporal:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
       interval: 30s
@@ -252,14 +255,15 @@ services:
     container_name: eb24-postiz-temporal-admin
     restart: unless-stopped
     environment:
-      - TEMPORAL_ADDRESS=eb24-postiz-temporal:7233
-      - TEMPORAL_CLI_ADDRESS=eb24-postiz-temporal:7233
+      TEMPORAL_ADDRESS: eb24-postiz-temporal:7233
+      TEMPORAL_CLI_ADDRESS: eb24-postiz-temporal:7233
     networks:
       - internal
     stdin_open: true
     tty: true
     depends_on:
-      - eb24-postiz-temporal
+      eb24-postiz-temporal:
+        condition: service_healthy
 
 # =============================================================================
 # VOLUMES - Named volumes for persistent data
